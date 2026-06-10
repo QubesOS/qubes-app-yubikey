@@ -30,6 +30,29 @@ cp -a etc $RPM_BUILD_ROOT/
 mkdir $RPM_BUILD_ROOT/usr
 cp -a bin $RPM_BUILD_ROOT/usr/
 
+%posttrans
+
+set -e
+
+# automatically migrate password to new file on update
+if [ -r /etc/qubes/yk-keys/yk-login-pass-hashed.hex.rpmsave ]; then
+    old_pass=$(grep -v '^#' /etc/qubes/yk-keys/yk-login-pass-hashed.hex.rpmsave | tr -d '\n')
+    new_pass=$(grep -v '^#' /etc/qubes/yk-keys/login-pass-hashed.hex | tr -d '\n')
+    if [ -z "$new_pass" ] && [ -n "$old_pass" ]; then
+        echo "$old_pass" >> /etc/qubes/yk-keys/login-pass-hashed.hex
+        rm -f /etc/qubes/yk-keys/yk-login-pass-hashed.hex.rpmsave
+    fi
+fi
+
+if [ -r /etc/qubes/yk-keys/yk-login-pass.rpmsave ]; then
+    old_pass=$(grep -v '^#' /etc/qubes/yk-keys/yk-login-pass.rpmsave | tr -d '\n')
+    new_pass=$(grep -v '^#' /etc/qubes/yk-keys/login-pass | tr -d '\n')
+    if [ -z "$new_pass" ] && [ -n "$old_pass" ]; then
+        echo "$old_pass" >> /etc/qubes/yk-keys/login-pass
+        rm -f /etc/qubes/yk-keys/yk-login-pass.rpmsave
+    fi
+fi
+
 %files
 %doc README.md
 %config(noreplace) /etc/pam.d/yubikey
